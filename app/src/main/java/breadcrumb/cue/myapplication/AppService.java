@@ -18,13 +18,18 @@ package breadcrumb.cue.myapplication;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.util.Log;
 
+import com.gimbal.android.BeaconEventListener;
+import com.gimbal.android.BeaconManager;
+import com.gimbal.android.BeaconSighting;
 import com.gimbal.android.Communication;
 import com.gimbal.android.CommunicationListener;
 import com.gimbal.android.CommunicationManager;
@@ -39,19 +44,31 @@ import breadcrumb.cue.myapplication.GimbalEvent.TYPE;
 
 public class AppService extends Service {
     final static String MY_ACTION = "MY_ACTION";
-
+    static HashMap<String,BeaconDetail> HBeaconMap = new HashMap<String,BeaconDetail>();
     private static final int MAX_NUM_EVENTS = 100;
     private LinkedList<GimbalEvent> events;
     private PlaceEventListener placeEventListener;
     private CommunicationListener communicationListener;
-
+    private BeaconEventListener beaconEventListener;
+    private BeaconManager bm;
     @Override
     public void onCreate() {
 
         events = new LinkedList<GimbalEvent>(GimbalDAO.getEvents(getApplicationContext()));
 
         Gimbal.setApiKey(this.getApplication(), "681db292-8351-4f0e-97b1-ec99ef6b0ff9");
+        bm = new BeaconManager();
 
+        bm.startListening();
+        beaconEventListener = new BeaconEventListener() {
+            @Override
+            public void onBeaconSighting(BeaconSighting beaconSighting) {
+                Log.e("beaconfind", beaconSighting.getRSSI().toString()+"-" +beaconSighting.getBeacon().getName());
+                if(HBeaconMap.containsKey(beaconSighting.getBeacon().getName()))
+                    HBeaconMap.get(beaconSighting.getBeacon().getName()).addRSSI(beaconSighting.getRSSI());
+            }
+        };
+        bm.addListener(beaconEventListener);
         // Setup PlaceEventListener
         placeEventListener = new PlaceEventListener() {
 
@@ -65,6 +82,7 @@ public class AppService extends Service {
                 Intent intent = new Intent();
                 intent.setAction(MY_ACTION);
 
+                HBeaconMap.put(p.getName(),new BeaconDetail(p.getName(),dTargetLat,dTargetLong));
                 intent.putExtra("LatPassed", dTargetLat);
                 intent.putExtra("LongPassed", dTargetLong);
                 intent.putExtra("CatPassed", category);
@@ -122,6 +140,7 @@ public class AppService extends Service {
             }
         };
         CommunicationManager.getInstance().addListener(communicationListener);
+
     }
 
     private void addEvent(GimbalEvent event) {
@@ -142,6 +161,8 @@ public class AppService extends Service {
     public void onDestroy() {
         PlaceManager.getInstance().removeListener(placeEventListener);
         CommunicationManager.getInstance().removeListener(communicationListener);
+        bm.removeListener(beaconEventListener);
+        bm.stopListening();
         super.onDestroy();
     }
 

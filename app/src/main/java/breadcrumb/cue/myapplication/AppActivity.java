@@ -16,12 +16,11 @@
  */
 package breadcrumb.cue.myapplication;
 
-import android.app.Activity;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -34,9 +33,8 @@ import android.widget.Toast;
 
 
 import com.gimbal.android.BeaconEventListener;
-import com.google.android.gms.location.LocationListener;
+
 import com.google.android.gms.maps.*;
-import com.google.android.gms.maps.GoogleMap.CancelableCallback;
 import com.google.android.gms.maps.GoogleMap.OnMapLoadedCallback;
 import com.google.android.gms.maps.model.*;
 
@@ -51,12 +49,11 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
     int catagory = 0;
     Double dLatPassed, dLongPassed;
     MyReceiver myReceiver;
-    LocationManager locManager;
+
     Location location;
     Marker markLocation;
 
-    PolylineOptions polylineOptions;
-    Polyline polyline;
+
     List<LatLng> listPoint;
     int currentPt;
     TextView info;
@@ -75,7 +72,9 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
         listPoint = new ArrayList<LatLng>();
         setUpMapIfNeeded();
         startService(new Intent(this, AppService.class));
+
         adapter = new GimbalEventListAdapter(this);
+
     }
 
 
