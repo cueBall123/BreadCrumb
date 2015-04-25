@@ -92,34 +92,30 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
         @Override
         public void onReceive(Context arg0, Intent arg1) {
             // TODO Auto-generated method stub
-
+            String Broad_cat ;
             try{
+                Broad_cat = arg1.getStringExtra("Broad");
+                if(Broad_cat.equals(BroadcastType.Breadcrumb.toString())) {
+                    latPassed = arg1.getStringExtra("LatPassed");
+                    longPassed = arg1.getStringExtra("LongPassed");
+                    catagory = Integer.parseInt(arg1.getStringExtra("CatPassed"));
 
-                latPassed = arg1.getStringExtra("LatPassed");
-                longPassed = arg1.getStringExtra("LongPassed");
-                catagory =Integer.parseInt( arg1.getStringExtra("CatPassed"));
-                Toast.makeText(AppActivity.this,
-                        "BreadCrumb dropped!",
-                        Toast.LENGTH_LONG).show();
+                    TextView v = (TextView) findViewById(R.id.textView1);
+                    v.setText(latPassed);
 
+                    MARK_LOCATION = new LatLng(Double.parseDouble(latPassed), Double.parseDouble(longPassed));
 
-                MARK_LOCATION =new LatLng( Double.parseDouble(latPassed),Double.parseDouble(longPassed));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(MARK_LOCATION, 25));
 
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(MARK_LOCATION, 25));
-
-                if(catagory==1){
-                    markLocation = mMap.addMarker(new MarkerOptions().position(MARK_LOCATION)
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.car)));
-                }
-
-                else if(catagory==2){
-                    markLocation = mMap.addMarker(new MarkerOptions().position(MARK_LOCATION)
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.m)));
-                }
-
-                else
-                    markLocation = mMap.addMarker(new MarkerOptions().position(MARK_LOCATION)
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.car)));
+                    if (catagory == 1) {
+                        markLocation = mMap.addMarker(new MarkerOptions().position(MARK_LOCATION)
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.car)));
+                    } else if (catagory == 2) {
+                        markLocation = mMap.addMarker(new MarkerOptions().position(MARK_LOCATION)
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.m)));
+                    } else
+                        markLocation = mMap.addMarker(new MarkerOptions().position(MARK_LOCATION)
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.car)));
 
                /* if (LOC2 != null && MARK_LOCATION !=null)
                 {
@@ -128,6 +124,11 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
                             .width(5)
                             .color(Color.RED));
                 }*/
+                }
+                else if(Broad_cat.equals(BroadcastType.BroadCalc.toString())){
+                    TextView v = (TextView) findViewById(R.id.Status);
+                    v.setText( arg1.getStringExtra("direction"));
+                }
             }
             catch(Exception e)
             {
@@ -188,23 +189,6 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
             }
         }
     }
-
-
-    public void onLocationChanged(Location location) {
-
-        if (location != null) {
-            latitude = location.getLatitude();
-            longitude = location.getLongitude();
-        }
-        LatLng latLng = new LatLng(latitude, longitude);
-
-        mMap.addMarker(new MarkerOptions().position(latLng));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
-
-    }
-
-
 
 
     @Override
