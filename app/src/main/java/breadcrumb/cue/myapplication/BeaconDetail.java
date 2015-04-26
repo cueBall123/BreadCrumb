@@ -4,7 +4,7 @@ package breadcrumb.cue.myapplication;
  * Created by cue on 4/23/2015.
  */
 public class BeaconDetail {
-        static int SerialNumber = 0;
+        //static int SerialNumber = 0;
         int VisitNumber;
         String BName;
         LocationCoord coord;
@@ -13,13 +13,12 @@ public class BeaconDetail {
         int LastRSSI;
         int CurrentRSSI;
     BeaconDetail(String BName,String Lat,String Long){
-            SerialNumber++;
+          //  SerialNumber++;
             this.BName = BName;
-            this.coord.Lat = Double.parseDouble(Lat);
-            this.coord.Longt =  Double.parseDouble(Long);
+            this.coord = new LocationCoord(Lat,Long);
             this.LastRSSI = 0;
             this.CurrentRSSI = 0;
-            VisitNumber = SerialNumber;
+            //VisitNumber = SerialNumber;
         }
         public void addRSSI(int RSSI){
             if (this.CurrentRSSI == 0){

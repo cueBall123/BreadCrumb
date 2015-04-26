@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
 
 import android.app.Service;
 import android.content.Intent;
@@ -32,7 +33,7 @@ import breadcrumb.cue.myapplication.GimbalEvent.TYPE;
 public class AppService extends Service {
     final static int RSSI_DIFF_THRESHOLD = 10;
     final static String MY_ACTION = "MY_ACTION";
-    static HashMap<String,BeaconDetail> HBeaconMap = new HashMap<String,BeaconDetail>();
+    static ConcurrentHashMap<String,BeaconDetail> HBeaconMap = new ConcurrentHashMap<>();
     private static final int MAX_NUM_EVENTS = 100;
     private LinkedList<GimbalEvent> events;
     private PlaceEventListener placeEventListener;
@@ -47,13 +48,13 @@ public class AppService extends Service {
         Gimbal.setApiKey(this.getApplication(), "681db292-8351-4f0e-97b1-ec99ef6b0ff9");
         bm = new BeaconManager();
         calculatePosition calc = new calculatePosition();
-        Thread cal = new Thread(calc);
+        final Thread cal = new Thread(calc);
         cal.start();
 
         bm.startListening();
         beaconEventListener = new BeaconEventListener() {
             @Override
-            public synchronized void onBeaconSighting(BeaconSighting beaconSighting) {
+            public  void onBeaconSighting(BeaconSighting beaconSighting) {
                 Log.e("beaconfind", beaconSighting.getRSSI().toString() + "-" + beaconSighting.getBeacon().getName());
                 if (HBeaconMap.containsKey(beaconSighting.getBeacon().getName()))
                     HBeaconMap.get(beaconSighting.getBeacon().getName()).addRSSI(beaconSighting.getRSSI());
@@ -73,11 +74,13 @@ public class AppService extends Service {
                 Intent intent = new Intent();
                 intent.setAction(MY_ACTION);
 
-                HBeaconMap.put(p.getName(), new BeaconDetail(p.getName(), dTargetLat, dTargetLong));
+                    HBeaconMap.put(p.getName(), new BeaconDetail(p.getName(), dTargetLat, dTargetLong));
+
                 intent.putExtra("Broad",BroadcastType.Breadcrumb.toString());
                 intent.putExtra("LatPassed", dTargetLat);
                 intent.putExtra("LongPassed", dTargetLong);
                 intent.putExtra("CatPassed", category);
+                intent.putExtra("Name", p.getName());
 
                 sendBroadcast(intent);
 
@@ -96,37 +99,55 @@ public class AppService extends Service {
     }
     private  class calculatePosition implements Runnable{
         Stack<LocationCoord> stackofVisits = new Stack<>();
+        Stack<Integer> visitRSSI = new Stack<>();
         @Override
         public  void run() {
             while(true){
-                Log.e("fromThread","ff");
-                Intent broad = new Intent();
-                broad.setAction(MY_ACTION);
-                broad.putExtra("Broad", BroadcastType.BroadCalc.toString());
-               for(String key : HBeaconMap.keySet()){
-                   stackofVisits.push(HBeaconMap.get(key).coord);
-                   int RSSI_Diff  = HBeaconMap.get(key).CurrentRSSI - HBeaconMap.get(key).LastRSSI;
-                   if(RSSI_Diff > RSSI_DIFF_THRESHOLD){
-                       broad.putExtra("direction", "Towards "+key);
-                       sendBroadcast(broad);
-                   }
-                   else if(RSSI_Diff < -RSSI_DIFF_THRESHOLD){
-                       broad.putExtra("direction", "Away from "+key);
-                       sendBroadcast(broad);
-                   }
-               }
-                if(stackofVisits.size()>=2){
-                    CalculateGPSDistance.Distance(stackofVisits.pop(),stackofVisits.pop());
-                }
-
-
                 try {
                     Thread.sleep(1000);
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                Log.e("fromThread","ff");
+                Intent broad = new Intent();
+                broad.setAction(MY_ACTION);
+                broad.putExtra("Broad", BroadcastType.BroadCalc.toString());
+               for(String key : HBeaconMap.keySet()){
+                   stackofVisits.push(HBeaconMap.get(key).coord);
+                   visitRSSI.push(HBeaconMap.get(key).CurrentRSSI);
+                   int RSSI_Diff  = HBeaconMap.get(key).CurrentRSSI - HBeaconMap.get(key).LastRSSI;
+                   if(RSSI_Diff > RSSI_DIFF_THRESHOLD){
+                       //broad.putExtra("direction", "Towards "+key);
+                       //sendBroadcast(broad);
+                   }
+                   else if(RSSI_Diff < -RSSI_DIFF_THRESHOLD){
+                       //broad.putExtra("direction", "Away from "+key);
+                       //sendBroadcast(broad);
+                   }
+               }
+                if(stackofVisits.size()>=2){
+                    LocationCoord first = stackofVisits.pop();
+                    LocationCoord second  = stackofVisits.pop();
+                    int rssi2 = visitRSSI.pop();
+                    int rssi1 = visitRSSI.pop();
+
+                    if(rssi1 !=0  && rssi2 != 0) {
+                        double ratio = rssi1 / ((double)rssi1 + rssi2);
+                        DistanceVector d = CalculateGPSDistance.Distance(second, first);
+
+                        LocationCoord newCoord = CalculateGPSDistance.newCoordinates(second, new DistanceVector(Double.toString(d.Distance * ratio), Double.toString(d.Bearing)));
+                        broad.putExtra("LatPassed", Double.toString(newCoord.Lat));
+                        broad.putExtra("LongPassed",Double.toString( newCoord.Longt));
+                        broad.putExtra("Bearing",Double.toString( d.Bearing));
+                        sendBroadcast(broad);
+                    }
+
+                }
                 stackofVisits.clear();
+
+
+
 
             }
         }

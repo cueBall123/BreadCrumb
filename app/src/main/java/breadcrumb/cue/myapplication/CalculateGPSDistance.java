@@ -6,6 +6,7 @@ package breadcrumb.cue.myapplication;
 public  class CalculateGPSDistance {
     final static int Earth_Radius = 6371000;// meters
 
+
    public static DistanceVector Distance(LocationCoord firstLoc, LocationCoord secondLoc){ // ‘haversine’ formula
         DistanceVector dv = new DistanceVector();
         double dLat = Math.toRadians(secondLoc.Lat-firstLoc.Lat);
@@ -22,5 +23,17 @@ public  class CalculateGPSDistance {
 
         dv.Bearing = (Math.toDegrees(Math.atan2(y, x))+360)%360;
         return dv;
+    }
+    public static LocationCoord newCoordinates(LocationCoord start,DistanceVector distanceVector){
+        double dLat = Math.toRadians(start.Lat);
+        double dLong = Math.toRadians(start.Longt);
+        double bearing = Math.toRadians((distanceVector.Bearing+180)%360);
+
+        double newLat = Math.asin(Math.sin(dLat)*Math.cos(distanceVector.Distance/Earth_Radius) + Math.cos(dLat)*Math.sin(distanceVector.Distance/Earth_Radius)*Math.cos(bearing));
+        double newLong = dLong +  Math.atan2(Math.sin(bearing)*Math.sin(distanceVector.Distance/Earth_Radius)*Math.cos(dLat),
+                Math.cos(distanceVector.Distance/Earth_Radius)-Math.sin(dLat)*Math.sin(newLat));
+
+
+        return new LocationCoord(Double.toString(Math.toDegrees(newLat)),Double.toString(Math.toDegrees(newLong)));
     }
 }
