@@ -1,19 +1,4 @@
-/**
- * Copyright (C) 2014 Gimbal, Inc. All rights reserved.
- *
- * This software is the confidential and proprietary information of Gimbal, Inc.
- *
- * The following sample code illustrates various aspects of the Gimbal SDK.
- *
- * The sample code herein is provided for your convenience, and has not been
- * tested or designed to work on any particular system configuration. It is
- * provided AS IS and your use of this sample code, whether as provided or
- * with any modification, is at your own risk. Neither Gimbal, Inc.
- * nor any affiliate takes any liability nor responsibility with respect
- * to the sample code, and disclaims all warranties, express and
- * implied, including without limitation warranties on merchantability,
- * fitness for a specified purpose, and against infringement.
- */
+
 package breadcrumb.cue.myapplication;
 
 
@@ -25,6 +10,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ListView;
@@ -40,6 +26,8 @@ import com.google.android.gms.maps.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AppActivity extends FragmentActivity implements OnMapLoadedCallback{
 
@@ -62,7 +50,34 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
     private GimbalEventListAdapter adapter;
     private BeaconEventListener beaconEventListener;
     double latitude, longitude;
+    private final Map<String, MarkerOptions> mMarkers = new ConcurrentHashMap<String, MarkerOptions>();
 
+    private void add(String name, MarkerOptions marker) {
+        //final MarkerOptions marker = new MarkerOptions().position(ll).title(name);
+        mMarkers.put(name, marker);
+        final MarkerOptions newMarker = marker;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mMap.addMarker(newMarker);
+            }
+        });
+    }
+
+    private void remove(String name) {
+        mMarkers.remove(name);
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mMap.clear();
+
+                for (MarkerOptions item : mMarkers.values()) {
+                    mMap.addMarker(item);
+                }
+            }
+        });
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,7 +87,9 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
         listPoint = new ArrayList<LatLng>();
         setUpMapIfNeeded();
         startService(new Intent(this, AppService.class));
-
+      /*  Log.e("distance", Double.toString(CalculateGPSDistance.Distance(new LocationCoord("41.838849", "-87.627583"), new LocationCoord("41.838848", "-87.627485")).Distance));
+        Log.e("newcord", Double.toString(CalculateGPSDistance.newCoordinates(new LocationCoord("41.838849", "-87.627583"),new DistanceVector("4","268.923523137032")).Lat));
+        */
         adapter = new GimbalEventListAdapter(this);
 
     }
@@ -99,7 +116,7 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
                     latPassed = arg1.getStringExtra("LatPassed");
                     longPassed = arg1.getStringExtra("LongPassed");
                     catagory = Integer.parseInt(arg1.getStringExtra("CatPassed"));
-
+                    String Name = arg1.getStringExtra("Name");
                     TextView v = (TextView) findViewById(R.id.textView1);
                     v.setText(latPassed);
 
@@ -108,14 +125,14 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(MARK_LOCATION, 25));
 
                     if (catagory == 1) {
-                        markLocation = mMap.addMarker(new MarkerOptions().position(MARK_LOCATION)
+                        add(Name,new MarkerOptions().position(MARK_LOCATION)
                                 .icon(BitmapDescriptorFactory.fromResource(R.drawable.car)));
                     } else if (catagory == 2) {
-                        markLocation = mMap.addMarker(new MarkerOptions().position(MARK_LOCATION)
-                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.m)));
+                      add(Name, new MarkerOptions().position(MARK_LOCATION)
+                              .icon(BitmapDescriptorFactory.fromResource(R.drawable.m)));
                     } else
-                        markLocation = mMap.addMarker(new MarkerOptions().position(MARK_LOCATION)
-                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.car)));
+                        add(Name,new MarkerOptions().position(MARK_LOCATION)
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.m)));
 
                /* if (LOC2 != null && MARK_LOCATION !=null)
                 {
@@ -126,8 +143,17 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
                 }*/
                 }
                 else if(Broad_cat.equals(BroadcastType.BroadCalc.toString())){
-                    TextView v = (TextView) findViewById(R.id.Status);
-                    v.setText( arg1.getStringExtra("direction"));
+                    //TextView v = (TextView) findViewById(R.id.Status);
+                    //v.setText( arg1.getStringExtra("direction"));
+                    String lat1 = arg1.getStringExtra("LatPassed");
+                    String long1 = arg1.getStringExtra("LongPassed");
+                    Float rotation = Float.parseFloat (arg1.getStringExtra("Bearing"));
+                    LatLng foot = new LatLng(Double.parseDouble(lat1),Double.parseDouble(long1));
+                    //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(), 25));
+                    remove("step");
+                    add("step",new MarkerOptions().position(foot)
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.footprint_opt)).rotation((rotation+90)%360));
+
                 }
             }
             catch(Exception e)
