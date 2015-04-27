@@ -1,7 +1,10 @@
 
 package breadcrumb.cue.myapplication;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -15,6 +18,7 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.gimbal.android.Beacon;
 import com.gimbal.android.BeaconEventListener;
 import com.gimbal.android.BeaconManager;
 import com.gimbal.android.BeaconSighting;
@@ -73,8 +77,8 @@ public class AppService extends Service {
                 String category = new IndoorLocationCoord(p).getCat();
                 Intent intent = new Intent();
                 intent.setAction(MY_ACTION);
-
-                    HBeaconMap.put(p.getName(), new BeaconDetail(p.getName(), dTargetLat, dTargetLong));
+                    if (category.equals("5"))
+                    HBeaconMap.put(p.getName(), new BeaconDetail(p.getName(), dTargetLat, dTargetLong,category));
 
                 intent.putExtra("Broad",BroadcastType.Breadcrumb.toString());
                 intent.putExtra("LatPassed", dTargetLat);
@@ -98,6 +102,13 @@ public class AppService extends Service {
 
     }
     private  class calculatePosition implements Runnable{
+        public class compareVisit implements Comparator<BeaconDetail>{
+
+            @Override
+            public int compare(BeaconDetail beaconDetail, BeaconDetail beaconDetail2) {
+                return beaconDetail.VisitNumber.compareTo(beaconDetail2.VisitNumber);
+            }
+        }
         Stack<LocationCoord> stackofVisits = new Stack<>();
         Stack<Integer> visitRSSI = new Stack<>();
         @Override
@@ -113,9 +124,11 @@ public class AppService extends Service {
                 Intent broad = new Intent();
                 broad.setAction(MY_ACTION);
                 broad.putExtra("Broad", BroadcastType.BroadCalc.toString());
+                List<BeaconDetail> templist = new ArrayList<BeaconDetail>();
                for(String key : HBeaconMap.keySet()){
-                   stackofVisits.push(HBeaconMap.get(key).coord);
-                   visitRSSI.push(HBeaconMap.get(key).CurrentRSSI);
+                   templist.add(HBeaconMap.get(key));
+                   //stackofVisits.push(HBeaconMap.get(key).coord);
+                   //visitRSSI.push(HBeaconMap.get(key).CurrentRSSI);
                    int RSSI_Diff  = HBeaconMap.get(key).CurrentRSSI - HBeaconMap.get(key).LastRSSI;
                    if(RSSI_Diff > RSSI_DIFF_THRESHOLD){
                        //broad.putExtra("direction", "Towards "+key);
@@ -126,25 +139,29 @@ public class AppService extends Service {
                        //sendBroadcast(broad);
                    }
                }
-                if(stackofVisits.size()>=2){
-                    LocationCoord first = stackofVisits.pop();
-                    LocationCoord second  = stackofVisits.pop();
-                    int rssi2 = visitRSSI.pop();
-                    int rssi1 = visitRSSI.pop();
+               Collections.sort(templist,new compareVisit());
+                Collections.reverse(templist);
+                if(templist.size()>=2){
+                    LocationCoord first = templist.get(0).coord;
+                    LocationCoord second  = templist.get(1).coord;
+                    int rssi2 = templist.get(0).CurrentRSSI;
+                    int rssi1 = templist.get(1).CurrentRSSI;
 
                     if(rssi1 !=0  && rssi2 != 0) {
-                        double ratio = rssi1 / ((double)rssi1 + rssi2);
+                        double ratio = (rssi1) / ((double)rssi1 + rssi2);
+                        //double ratio = Math.pow(10,rssi1)/Math.pow(10,rssi1)+Math.pow(10,rssi2);
                         DistanceVector d = CalculateGPSDistance.Distance(second, first);
 
                         LocationCoord newCoord = CalculateGPSDistance.newCoordinates(second, new DistanceVector(Double.toString(d.Distance * ratio), Double.toString(d.Bearing)));
                         broad.putExtra("LatPassed", Double.toString(newCoord.Lat));
                         broad.putExtra("LongPassed",Double.toString( newCoord.Longt));
+                        //broad.putExtra("Distance",Double.toString( d.Distance));
                         broad.putExtra("Bearing",Double.toString( d.Bearing));
                         sendBroadcast(broad);
                     }
 
                 }
-                stackofVisits.clear();
+                templist.clear();
 
 
 

@@ -130,9 +130,15 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
                     } else if (catagory == 2) {
                       add(Name, new MarkerOptions().position(MARK_LOCATION)
                               .icon(BitmapDescriptorFactory.fromResource(R.drawable.m)));
-                    } else
+
+                    }
+                    else if (catagory == 111) {
+                        add(Name, new MarkerOptions().position(MARK_LOCATION)
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.supermarion)));
+                    }
+                    else
                         add(Name,new MarkerOptions().position(MARK_LOCATION)
-                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.m)));
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.beacon)));
 
                /* if (LOC2 != null && MARK_LOCATION !=null)
                 {
@@ -143,8 +149,8 @@ public class AppActivity extends FragmentActivity implements OnMapLoadedCallback
                 }*/
                 }
                 else if(Broad_cat.equals(BroadcastType.BroadCalc.toString())){
-                    //TextView v = (TextView) findViewById(R.id.Status);
-                    //v.setText( arg1.getStringExtra("direction"));
+                    //TextView v = (TextView) findViewById(R.id.textdist);
+                    //v.setText( arg1.getStringExtra("Distance"));
                     String lat1 = arg1.getStringExtra("LatPassed");
                     String long1 = arg1.getStringExtra("LongPassed");
                     Float rotation = Float.parseFloat (arg1.getStringExtra("Bearing"));

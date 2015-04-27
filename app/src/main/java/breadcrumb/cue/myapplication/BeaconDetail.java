@@ -4,21 +4,21 @@ package breadcrumb.cue.myapplication;
  * Created by cue on 4/23/2015.
  */
 public class BeaconDetail {
-        //static int SerialNumber = 0;
-        int VisitNumber;
+        private static int SerialNumber = 0;
+        Integer VisitNumber;
         String BName;
         LocationCoord coord;
-        String Lat;
-        String Long;
+        String Cat;
         int LastRSSI;
         int CurrentRSSI;
-    BeaconDetail(String BName,String Lat,String Long){
-          //  SerialNumber++;
+    BeaconDetail(String BName,String Lat,String Long,String Cat){
+            SerialNumber++;
             this.BName = BName;
             this.coord = new LocationCoord(Lat,Long);
             this.LastRSSI = 0;
             this.CurrentRSSI = 0;
-            //VisitNumber = SerialNumber;
+            this.Cat = Cat;
+            VisitNumber = SerialNumber;
         }
         public void addRSSI(int RSSI){
             if (this.CurrentRSSI == 0){
